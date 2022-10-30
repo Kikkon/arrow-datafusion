@@ -20,7 +20,7 @@ use crate::logical_plan::{AsLogicalPlan, LogicalExtensionCodec};
 use crate::{from_proto::parse_expr, protobuf};
 use arrow::datatypes::SchemaRef;
 use datafusion::datasource::TableProvider;
-use datafusion::physical_plan::functions::make_scalar_function;
+use datafusion::physical_plan::{functions::make_scalar_function, ExecutionPlan};
 use datafusion_common::{DataFusionError, Result};
 use datafusion_expr::{
     create_udaf, create_udf, Expr, Extension, LogicalPlan, Volatility,
@@ -198,6 +198,48 @@ pub fn logical_plan_from_bytes_with_extension_codec(
     ctx: &SessionContext,
     extension_codec: &dyn LogicalExtensionCodec,
 ) -> Result<LogicalPlan> {
+    let protobuf = protobuf::LogicalPlanNode::decode(bytes).map_err(|e| {
+        DataFusionError::Plan(format!("Error decoding expr as protobuf: {}", e))
+    })?;
+    protobuf.try_into_logical_plan(ctx, extension_codec)
+}
+
+/// Serialize a PhysicalPlan as bytes
+pub fn physical_plan_to_bytes(plan: &dyn ExecutionPlan) -> Result<Bytes> {
+    let extension_codec = DefaultExtensionCodec {};
+    physical_plan_to_bytes_with_extension_codec(plan, &extension_codec)
+}
+
+/// Serialize a PhysicalPlan as bytes, using the provided extension codec
+pub fn physical_plan_to_bytes_with_extension_codec(
+    plan: &dyn ExecutionPlan,
+    extension_codec: &dyn LogicalExtensionCodec,
+) -> Result<Bytes> {
+    // let protobuf =
+    //     protobuf::LogicalPlanNode::try_from_logical_plan(plan, extension_codec)?;
+    // let mut buffer = BytesMut::new();
+    // protobuf.encode(&mut buffer).map_err(|e| {
+    //     DataFusionError::Plan(format!("Error encoding protobuf as bytes: {}", e))
+    // })?;
+    // Ok(buffer.into())
+    Ok(Bytes::new())
+}
+
+/// Deserialize a PhysicalPlan from bytes
+pub fn physical_plan_from_bytes(
+    bytes: &[u8],
+    ctx: &SessionContext,
+) -> Result<impl ExecutionPlan> {
+    let extension_codec = DefaultExtensionCodec {};
+    physical_plan_from_bytes_with_extension_codec(bytes, ctx, &extension_codec)
+}
+
+/// Deserialize a PhysicalPlan from bytes
+pub fn physical_plan_from_bytes_with_extension_codec(
+    bytes: &[u8],
+    ctx: &SessionContext,
+    extension_codec: &dyn LogicalExtensionCodec,
+) -> Result<impl ExecutionPlan> {
     let protobuf = protobuf::LogicalPlanNode::decode(bytes).map_err(|e| {
         DataFusionError::Plan(format!("Error decoding expr as protobuf: {}", e))
     })?;

@@ -48,7 +48,7 @@ fn main() -> Result<()> {
 
 ## Serializing Plans
 
-Based on [examples/plan_serde.rs](examples/plan_serde.rs)
+Based on [examples/logical_plan_serde.rs](examples/logical_plan_serde.rs)
 
 ```rust
 use datafusion::prelude::*;
